@@ -1,16 +1,33 @@
 # AWS Infrastructure Provisioning with Terraform
 
-Provisioning a reproducible AWS web server environment using Terraform, Infrastructure as Code (IaC), and automated EC2 bootstrapping with NGINX.
-
-> Developed as my submission for **Week 1 of the HUG Lagos/Ibadan Terraform Challenge**.
+Provision a modular AWS web server environment on Amazon Web Services using Terraform, Infrastructure as Code (IaC), reusable Terraform modules, automated EC2 bootstrapping with NGINX, and remote Terraform state management.
 
 ---
 
 ## 📖 Overview
 
-This project provisions a complete AWS infrastructure for hosting a basic web server using Terraform. The infrastructure is deployed entirely as code and includes networking components, an EC2 instance, and automated server configuration using a `user_data` bootstrap script.
+This project provisions a complete AWS web server environment on Amazon Web Services using Terraform.
 
-Once deployed, the EC2 instance automatically installs NGINX and serves a custom HTML page.
+The infrastructure is organized into reusable Terraform modules that separate networking, security, compute, and backend resources into independent components, improving maintainability, scalability, and reusability.
+
+To support collaborative Infrastructure as Code workflows, Terraform state is managed remotely using an Amazon S3 backend with native Terraform state locking.
+
+The backend infrastructure is provisioned through a dedicated **bootstrap-backend** configuration before the main infrastructure is initialized, following a common production pattern for Terraform projects.
+
+An EC2 `user_data` bootstrap script automatically installs and configures NGINX during provisioning, allowing the web server to become operational immediately after deployment.
+
+---
+
+## ✨ Features
+
+- Modular Terraform architecture
+- Reusable Infrastructure as Code (IaC) modules
+- Automated EC2 provisioning
+- Automated NGINX installation using `user_data`
+- Remote Terraform state stored in Amazon S3
+- Native Terraform state locking (`use_lockfile`)
+- Repeatable infrastructure deployments
+- Clean separation of infrastructure components
 
 ---
 
@@ -39,9 +56,9 @@ Once deployed, the EC2 instance automatically installs NGINX and serves a custom
 
 ---
 
-## ☁️ Infrastructure Provisioned
+## ☁️ Infrastructure Components
 
-The following AWS resources are provisioned using Terraform:
+This project provisions the following AWS resources:
 
 - Amazon VPC
 - Public Subnet
@@ -51,6 +68,19 @@ The following AWS resources are provisioned using Terraform:
 - Security Group
 - Ubuntu EC2 Instance
 - NGINX Web Server
+- Amazon S3 Backend for Terraform State
+
+---
+
+## 📦 Terraform Modules
+
+| Module | Responsibility |
+|----------|----------------|
+| **bootstrap-backend** | Provisions the Amazon S3 remote backend |
+| **vpc** | Creates the Virtual Private Cloud |
+| **networking** | Creates the Public Subnet, Internet Gateway, Route Table and Association |
+| **security-group** | Configures SSH and HTTP access |
+| **compute** | Deploys the EC2 instance and bootstraps NGINX |
 
 ---
 
@@ -58,19 +88,44 @@ The following AWS resources are provisioned using Terraform:
 
 ```text
 terraform-aws-webserver/
+│
+├── bootstrap-backend/
+│   ├── main.tf
+│   ├── outputs.tf
+│   ├── providers.tf
+│   ├── variables.tf
+│   └── terraform.tfvars
+│
+├── modules/
+│   ├── compute/
+│   ├── networking/
+│   ├── security-group/
+│   └── vpc/
+│
+├── backend.tf
+├── main.tf
+├── outputs.tf
 ├── providers.tf
 ├── variables.tf
-├── network.tf
-├── compute.tf
-├── outputs.tf
-├── userdata.sh
-├── terraform.tfvars
+├── terraform.tfvars.example
 ├── README.md
-├── .gitignore
 └── images/
-    ├── ec2-running.png
-    └── webpage.png
 ```
+
+---
+
+## 🔐 Remote State Management
+
+Terraform state is managed remotely using an Amazon S3 backend.
+
+The backend infrastructure is provisioned using the **bootstrap-backend** Terraform configuration before the application infrastructure is initialized, following a common production pattern used in Infrastructure as Code projects.
+
+Backend features include:
+
+- Amazon S3 Backend
+- Bucket Versioning
+- Server-side Encryption
+- Native Terraform State Locking (`use_lockfile = true`)
 
 ---
 
@@ -78,11 +133,11 @@ terraform-aws-webserver/
 
 Before deploying this project, ensure you have:
 
-- Terraform
+- Terraform v1.6+
 - AWS CLI
-- An AWS Account
-- Configured AWS credentials
-- An existing EC2 Key Pair
+- AWS Account
+- Configured AWS Credentials
+- Existing EC2 Key Pair
 
 ---
 
@@ -91,32 +146,33 @@ Before deploying this project, ensure you have:
 Clone the repository:
 
 ```bash
-git clone https://github.com/ajotony/terraform-aws-webserver.git
+git clone https://github.com/Ajotony/terraform-aws-webserver.git
 cd terraform-aws-webserver
 ```
 
-Initialize Terraform:
+### Bootstrap the Remote Backend
+
+```bash
+cd bootstrap-backend
+
+terraform init
+
+terraform apply
+
+cd ..
+```
+
+### Deploy the Infrastructure
 
 ```bash
 terraform init
-```
 
-Format and validate the configuration:
+terraform fmt -recursive
 
-```bash
-terraform fmt
 terraform validate
-```
 
-Review the execution plan:
-
-```bash
 terraform plan
-```
 
-Deploy the infrastructure:
-
-```bash
 terraform apply
 ```
 
@@ -130,9 +186,9 @@ terraform destroy
 
 ## 🌐 Access the Application
 
-After deployment, Terraform outputs the public IP address of the EC2 instance.
+After deployment, Terraform outputs the EC2 public IP.
 
-Open your browser and visit:
+Open your browser and navigate to:
 
 ```text
 http://<EC2_PUBLIC_IP>
@@ -144,20 +200,30 @@ http://<EC2_PUBLIC_IP>
 
 ### AWS EC2 Instance
 
-The EC2 instance successfully provisioned and running on AWS.
+Terraform successfully provisioned the Ubuntu EC2 instance.
 
 <p align="center">
-  <img src="images/aws-ec2-instance.png" alt="AWS EC2 Instance" width="900">
+  <img src="images/aws-ec2-instance.png" width="1000">
 </p>
 
 ---
 
-### Deployed NGINX Web Server
+### NGINX Web Server
 
-The NGINX web server automatically configured through the EC2 `user_data` bootstrap script.
+NGINX automatically installed and configured using EC2 `user_data`.
 
 <p align="center">
-  <img src="images/nginx-homepage.png" alt="NGINX Web Server" width="900">
+  <img src="images/nginx-homepage.png" width="1000">
+</p>
+
+---
+
+### Remote Terraform Backend
+
+Terraform state stored remotely in Amazon S3.
+
+<p align="center">
+  <img src="images/s3-backend.png" width="1000">
 </p>
 
 ---
@@ -168,6 +234,7 @@ The NGINX web server automatically configured through the EC2 `user_data` bootst
 - Amazon Web Services (AWS)
 - Amazon EC2
 - Amazon VPC
+- Amazon S3
 - Ubuntu Server
 - NGINX
 - Git
@@ -175,25 +242,29 @@ The NGINX web server automatically configured through the EC2 `user_data` bootst
 
 ---
 
-## 🎯 Key Concepts Demonstrated
+## 💡 Key Concepts Demonstrated
 
 - Infrastructure as Code (IaC)
+- Modular Terraform Architecture
+- Terraform Modules
+- Remote State Management
+- Amazon S3 Backend
+- Native Terraform State Locking
+- Infrastructure Automation
 - AWS Networking
 - EC2 Provisioning
-- VPC Design
-- Security Groups
 - Resource Dependencies
-- Terraform Variables and Outputs
-- Automated EC2 Bootstrapping with `user_data`
+- Automated EC2 Bootstrapping
 
 ---
 
-## 💡 Key Takeaways
+## 📚 Key Takeaways
 
-- Designed and provisioned AWS infrastructure using Terraform.
-- Automated server configuration through EC2 `user_data`.
-- Built a reproducible infrastructure deployment workflow.
-- Applied Infrastructure as Code best practices for cloud resource management.
+- Designed reusable Terraform modules for infrastructure provisioning.
+- Automated AWS infrastructure deployment using Infrastructure as Code.
+- Implemented automated server configuration using EC2 `user_data`.
+- Configured a remote Terraform backend using Amazon S3.
+- Improved infrastructure maintainability through modular architecture.
 
 ---
 
@@ -208,4 +279,4 @@ The NGINX web server automatically configured through the EC2 `user_data` bootst
 
 ## Acknowledgements
 
-This repository contains my submission for **Week 1 of the HUG Lagos/Ibadan Terraform Challenge**, where the objective was to design and provision a complete AWS web server environment using Terraform while applying Infrastructure as Code (IaC) best practices.
+This project was developed as part of the **HUG Lagos/Ibadan 30-Day Terraform Challenge**, applying Infrastructure as Code principles and Terraform best practices to build modular, maintainable AWS infrastructure.
