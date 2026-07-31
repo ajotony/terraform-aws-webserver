@@ -1,5 +1,18 @@
+# Terraform
 .terraform/
 *.tfstate
 *.tfstate.*
-terraform.tfvars
 crash.log
+
+# Terraform variables
+*.tfvars
+!terraform.tfvars.example
+
+# Plans
+*.tfplan
+
+# Lock file
+terraform.lock.hcl
+
+# VSCode
+.vscode/
